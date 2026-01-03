@@ -169,12 +169,13 @@ export async function openWorkerTab(
         tell application "iTerm2"
           activate
           set targetWindow to window id ${existingWindowId}
+          set claudeSession to missing value
           tell targetWindow
             create tab with default profile
-            tell current tab
-              set name to "${escapedName}"
+            set workerTab to current tab
+            tell workerTab
               tell current session
-                set name to "${escapedName} - dev"
+                set name to "${escapedName}"
                 write text "cd ${escapedDir} && ${escapedDevCmd}"
 
                 -- Split vertically for Claude
@@ -182,16 +183,20 @@ export async function openWorkerTab(
                 tell claudeSession
                   set name to "${escapedName} - claude"
                   write text "cd ${escapedDir} && ${escapedClaudeCmd}"
-                  -- Wait for Claude to start, then send task (write text includes Enter)
-                  delay 3
-                  write text "${escapedTask}"
-                  -- Send extra Enter in case Claude needs confirmation
-                  delay 0.5
-                  write text ""
                 end tell
               end tell
             end tell
           end tell
+
+          -- Wait for Claude to start
+          do shell script "sleep 4"
+
+          -- Send task to the stored Claude session
+          tell claudeSession
+            write text "${escapedTask}"
+            write text ""
+          end tell
+
           return id of targetWindow
         end tell
       `;
@@ -202,10 +207,10 @@ export async function openWorkerTab(
           activate
           create window with default profile
           set newWindow to current window
+          set claudeSession to missing value
           tell newWindow
             -- First create a marker tab so we can find this window later
             tell current tab
-              set name to "⚡ parallel-claude"
               tell current session
                 set name to "⚡ parallel-claude"
               end tell
@@ -213,10 +218,10 @@ export async function openWorkerTab(
 
             -- Now create the actual worker tab
             create tab with default profile
-            tell current tab
-              set name to "${escapedName}"
+            set workerTab to current tab
+            tell workerTab
               tell current session
-                set name to "${escapedName} - dev"
+                set name to "${escapedName}"
                 write text "cd ${escapedDir} && ${escapedDevCmd}"
 
                 -- Split vertically for Claude
@@ -224,16 +229,20 @@ export async function openWorkerTab(
                 tell claudeSession
                   set name to "${escapedName} - claude"
                   write text "cd ${escapedDir} && ${escapedClaudeCmd}"
-                  -- Wait for Claude to start, then send task (write text includes Enter)
-                  delay 3
-                  write text "${escapedTask}"
-                  -- Send extra Enter in case Claude needs confirmation
-                  delay 0.5
-                  write text ""
                 end tell
               end tell
             end tell
           end tell
+
+          -- Wait for Claude to start
+          do shell script "sleep 4"
+
+          -- Send task to the stored Claude session
+          tell claudeSession
+            write text "${escapedTask}"
+            write text ""
+          end tell
+
           return id of newWindow
         end tell
       `;
@@ -245,22 +254,28 @@ export async function openWorkerTab(
         tell application "iTerm2"
           activate
           set targetWindow to window id ${existingWindowId}
+          set claudeSession to missing value
           tell targetWindow
             create tab with default profile
-            tell current tab
-              set name to "${escapedName}"
-              tell current session
+            set workerTab to current tab
+            tell workerTab
+              set claudeSession to current session
+              tell claudeSession
                 set name to "${escapedName}"
                 write text "cd ${escapedDir} && ${escapedClaudeCmd}"
-                -- Wait for Claude to start, then send task (write text includes Enter)
-                delay 3
-                write text "${escapedTask}"
-                -- Send extra Enter in case Claude needs confirmation
-                delay 0.5
-                write text ""
               end tell
             end tell
           end tell
+
+          -- Wait for Claude to start
+          do shell script "sleep 4"
+
+          -- Send task to the stored session
+          tell claudeSession
+            write text "${escapedTask}"
+            write text ""
+          end tell
+
           return id of targetWindow
         end tell
       `;
@@ -270,10 +285,10 @@ export async function openWorkerTab(
           activate
           create window with default profile
           set newWindow to current window
+          set claudeSession to missing value
           tell newWindow
             -- First create a marker tab so we can find this window later
             tell current tab
-              set name to "⚡ parallel-claude"
               tell current session
                 set name to "⚡ parallel-claude"
               end tell
@@ -281,20 +296,25 @@ export async function openWorkerTab(
 
             -- Now create the actual worker tab
             create tab with default profile
-            tell current tab
-              set name to "${escapedName}"
-              tell current session
+            set workerTab to current tab
+            tell workerTab
+              set claudeSession to current session
+              tell claudeSession
                 set name to "${escapedName}"
                 write text "cd ${escapedDir} && ${escapedClaudeCmd}"
-                -- Wait for Claude to start, then send task (write text includes Enter)
-                delay 3
-                write text "${escapedTask}"
-                -- Send extra Enter in case Claude needs confirmation
-                delay 0.5
-                write text ""
               end tell
             end tell
           end tell
+
+          -- Wait for Claude to start
+          do shell script "sleep 4"
+
+          -- Send task to the stored session
+          tell claudeSession
+            write text "${escapedTask}"
+            write text ""
+          end tell
+
           return id of newWindow
         end tell
       `;

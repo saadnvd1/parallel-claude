@@ -18,7 +18,7 @@ import {
 import { openWorkerTab, ensureItermRunning } from "../lib/iterm.js";
 
 interface SpawnOptions {
-  task: string;
+  task: string[];
   branch?: string;
   port?: number;
   noDev?: boolean;
@@ -26,16 +26,35 @@ interface SpawnOptions {
 }
 
 export async function spawn(repoUrl: string, options: SpawnOptions) {
+  const tasks = options.task;
+
+  // Spawn a worker for each task
+  for (let i = 0; i < tasks.length; i++) {
+    const task = tasks[i];
+    await spawnSingleWorker(repoUrl, task, options, i === 0);
+  }
+
+  if (tasks.length > 1) {
+    console.log(chalk.green(`\n✨ Spawned ${tasks.length} workers!`));
+  }
+}
+
+async function spawnSingleWorker(
+  repoUrl: string,
+  task: string,
+  options: SpawnOptions,
+  isFirstInBatch: boolean
+) {
   const spinner = ora("Preparing worker...").start();
 
   try {
     // Generate worker details
     const existingNames = getAllWorkers().map((w) => w.name);
-    const workerName = options.name || generateWorkerName(existingNames);
+    const workerName = generateWorkerName(existingNames);
     const workerId = nanoid(10);
     const repoName = getRepoName(repoUrl);
-    const port = options.port || getNextPort();
-    const branchName = options.branch || generateBranchName(options.task, workerName);
+    const port = getNextPort();
+    const branchName = options.branch || generateBranchName(task, workerName);
     const workerDir = join(CONFIG.workersDir, workerName);
 
     spinner.text = `Creating worker ${chalk.cyan(workerName)}...`;
@@ -122,7 +141,7 @@ export async function spawn(repoUrl: string, options: SpawnOptions) {
       repoUrl,
       repoName,
       branch: branchName,
-      task: options.task,
+      task,
       directory: workerDir,
       port,
       createdAt: new Date().toISOString(),
@@ -146,7 +165,7 @@ export async function spawn(repoUrl: string, options: SpawnOptions) {
     const claudeCmd = `claude --dangerously-skip-permissions`;
 
     // Prepend system instruction to the task
-    const fullTask = `Always make sure to follow CLAUDE.md before starting. Task: ${options.task}`;
+    const fullTask = `Always make sure to follow CLAUDE.md before starting. Task: ${task}`;
 
     // Open iTerm tab with split panes (dev left, claude right)
     spinner.text = isFirstWorker
@@ -161,7 +180,7 @@ export async function spawn(repoUrl: string, options: SpawnOptions) {
         `   ${chalk.dim("Directory:")} ${workerDir}\n` +
         `   ${chalk.dim("Branch:")}    ${branchName}\n` +
         `   ${chalk.dim("Port:")}      ${port}\n` +
-        `   ${chalk.dim("Task:")}      ${options.task}`
+        `   ${chalk.dim("Task:")}      ${task}`
     );
 
     console.log(
